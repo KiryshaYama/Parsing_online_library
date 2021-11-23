@@ -1,23 +1,52 @@
 import requests, os
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
+from urllib.parse import unquote, urljoin, urlparse
 
 def check_for_redirect(response):
     response.raise_for_status()
     if len(response.history):
         raise requests.HTTPError()
 
+
+def get_file_path(root_path, folder_name, filename):
+    if root_path:
+        os.makedirs(os.path.join(root_path, folder_name), exist_ok=True)
+        return os.path.join(root_path, folder_name, filename)
+
+    os.makedirs(folder_name, exist_ok=True)
+    return os.path.join(folder_name, filename)
+
 def download_file(response, filepath, folder='books/'):
     with open(filepath, 'wb') as file:
         file.write(response.content)
+
+def parse_filename(url):
+    file_path = unquote(urlparse(url).path)
+    return os.path.basename(file_path)
+
+def download_image(book_img_url, root_path=None, folder_name='images'):
+    response = requests.get(book_img_url)
+    response.raise_for_status()
+    check_for_redirect(response)
+
+    file_path = get_file_path(root_path, folder_name, parse_filename(book_img_url))
+
+    with open(file_path, 'wb') as file_obj:
+        file_obj.write(response.content)
+    return file_path
 
 def parse_book_page(soup):
     book_header_layout = soup.find('div', id='content').find('h1')
     title, author = book_header_layout.text.split('::')
 
+    book_img_layout = soup.find('div', class_='bookimage').find('img')
+    book_img_url = book_img_layout['src']
+
     book_info = {
         'title': title.strip(),
         'author': author.strip(),
+        'book_img_url': book_img_url
     }
 
     return book_info
@@ -31,25 +60,34 @@ def parse_book_info(book_id, url_template='https://tululu.org/b{book_id}/'):
     book_info = parse_book_page(soup)
 
     book_info['id'] = book_id
-
+    book_info['book_img_url'] = urljoin(response.url, book_info['book_img_url'])
     return book_info
 
-def main():
-    site_url = "https://tululu.org/txt.php"
-    folder = 'books'
-    os.makedirs(folder, exist_ok=True)
-    for book_id in range(1,11):
+
+def download_books(start_index=1, stop_index=11):
+    for book_id in range(start_index, stop_index):
+
         params = {'id': book_id}
-        response = requests.get(site_url, params=params)
-        response.raise_for_status()
+        response = requests.get(url='https://tululu.org/txt.php', params=params)
         try:
             check_for_redirect(response)
+            book_text = response.text
+            book_info = parse_book_info(book_id)
+            save_book(book_info['id'], book_info['title'], book_text)
+            download_image(book_info['book_img_url'])
         except requests.exceptions.HTTPError:
             continue
-        book_info = parse_book_info(book_id)
-        filename = f'{book_id}. {sanitize_filename(book_info["title"])}.txt'
-        filepath = os.path.join(os.getcwd(), folder, filename)
-        download_file(response,filepath)
+
+def save_book(book_id, title, text, root_path=None, folder_name='books'):
+    file_path = get_file_path(root_path, folder_name, sanitize_filename(f'{book_id}. {title}.txt'))
+
+    with open(file_path, 'w') as file_obj:
+        file_obj.write(text)
+
+def main():
+    download_books(1, 11)
+
+
 
 if __name__ == '__main__':
     main()
