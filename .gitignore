@@ -115,3 +115,5 @@ dmypy.json
 
 # Project ignore folders
 books/
+images/
+comments/
