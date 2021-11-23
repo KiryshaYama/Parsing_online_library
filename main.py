@@ -1,8 +1,11 @@
 import requests, os
+
+import argparse
+
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.parse import unquote, urljoin, urlparse
-import argparse
+
 
 def check_for_redirect(response):
     response.raise_for_status()
