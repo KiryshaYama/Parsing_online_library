@@ -36,6 +36,18 @@ def download_image(book_img_url, root_path=None, folder_name='images'):
         file_obj.write(response.content)
     return file_path
 
+def save_comments(book_info, folder='comments'):
+    if not any(book_info['comments']):
+        return None
+
+    os.makedirs(folder, exist_ok=True)
+    filename_template = 'Комментарии к {id}.{title}.txt'
+    file_path = os.path.join(folder, sanitize_filename(filename_template.format(id=book_info['id'], title=book_info['title'])))
+
+    with open(file_path, 'w') as file_obj:
+        file_obj.write('\n\n'.join(book_info['comments']))
+    return file_path
+
 def parse_book_page(soup):
     book_header_layout = soup.find('div', id='content').find('h1')
     title, author = book_header_layout.text.split('::')
@@ -43,10 +55,14 @@ def parse_book_page(soup):
     book_img_layout = soup.find('div', class_='bookimage').find('img')
     book_img_url = book_img_layout['src']
 
+    comment_soups = soup.find_all('div', class_='texts')
+    comments = [comment_layout.find('span').text for comment_layout in comment_soups]
+
     book_info = {
         'title': title.strip(),
         'author': author.strip(),
-        'book_img_url': book_img_url
+        'book_img_url': book_img_url,
+        'comments':comments
     }
 
     return book_info
@@ -63,10 +79,8 @@ def parse_book_info(book_id, url_template='https://tululu.org/b{book_id}/'):
     book_info['book_img_url'] = urljoin(response.url, book_info['book_img_url'])
     return book_info
 
-
 def download_books(start_index=1, stop_index=11):
     for book_id in range(start_index, stop_index):
-
         params = {'id': book_id}
         response = requests.get(url='https://tululu.org/txt.php', params=params)
         try:
@@ -75,6 +89,7 @@ def download_books(start_index=1, stop_index=11):
             book_info = parse_book_info(book_id)
             save_book(book_info['id'], book_info['title'], book_text)
             download_image(book_info['book_img_url'])
+            save_comments(book_info)
         except requests.exceptions.HTTPError:
             continue
 
@@ -86,8 +101,6 @@ def save_book(book_id, title, text, root_path=None, folder_name='books'):
 
 def main():
     download_books(1, 11)
-
-
 
 if __name__ == '__main__':
     main()
