@@ -2,6 +2,7 @@ import requests, os
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.parse import unquote, urljoin, urlparse
+import argparse
 
 def check_for_redirect(response):
     response.raise_for_status()
@@ -16,10 +17,6 @@ def get_file_path(root_path, folder_name, filename):
 
     os.makedirs(folder_name, exist_ok=True)
     return os.path.join(folder_name, filename)
-
-def download_file(response, filepath, folder='books/'):
-    with open(filepath, 'wb') as file:
-        file.write(response.content)
 
 def parse_filename(url):
     file_path = unquote(urlparse(url).path)
@@ -42,7 +39,13 @@ def save_comments(book_info, folder='comments'):
 
     os.makedirs(folder, exist_ok=True)
     filename_template = 'Комментарии к {id}.{title}.txt'
-    file_path = os.path.join(folder, sanitize_filename(filename_template.format(id=book_info['id'], title=book_info['title'])))
+    file_path = os.path.join(
+        folder,
+        sanitize_filename(filename_template.format(
+            id=book_info['id'],
+            title=book_info['title'],
+        ))
+    )
 
     with open(file_path, 'w') as file_obj:
         file_obj.write('\n\n'.join(book_info['comments']))
@@ -66,7 +69,7 @@ def parse_book_page(soup):
         'author': author.strip(),
         'book_img_url': book_img_url,
         'comments':comments,
-        'genres': genres
+        'genres':genres
     }
 
     return book_info
@@ -82,6 +85,7 @@ def parse_book_info(book_id, url_template='https://tululu.org/b{book_id}/'):
     book_info['id'] = book_id
     book_info['book_img_url'] = urljoin(response.url, book_info['book_img_url'])
     return book_info
+
 
 def download_books(start_index=1, stop_index=11):
     for book_id in range(start_index, stop_index):
@@ -103,8 +107,32 @@ def save_book(book_id, title, text, root_path=None, folder_name='books'):
     with open(file_path, 'w') as file_obj:
         file_obj.write(text)
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description='Download books in TXT'
+    )
+    parser.add_argument(
+        'start_index',
+        type=int,
+        help='start index to download books in book ID range from start to stop',
+    )
+    parser.add_argument(
+        'stop_index',
+        type=int,
+        help='stop index to download books in book ID range from start to stop'
+    )
+    return parser.parse_args()
+
 def main():
-    download_books(1, 11)
+    args = parse_arguments()
+    if args.start_index < 1:
+        args.start_index = 1
+    if args.stop_index < args.start_index:
+        raise ValueError('Input indexes range is wrong: '
+                         f'from {args.start_index} to {args.stop_index}')
+
+    download_books(args.start_index, args.stop_index+1)
+
 
 if __name__ == '__main__':
     main()
