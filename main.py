@@ -9,7 +9,7 @@ from urllib.parse import unquote, urljoin, urlparse
 
 def check_for_redirect(response):
     response.raise_for_status()
-    if len(response.history):
+    if response.history:
         raise requests.HTTPError()
 
 
@@ -34,24 +34,6 @@ def download_image(book_img_url, root_path=None, folder_name='images'):
 
     with open(file_path, 'wb') as file_obj:
         file_obj.write(response.content)
-    return file_path
-
-def save_comments(book_info, folder='comments'):
-    if not any(book_info['comments']):
-        return None
-
-    os.makedirs(folder, exist_ok=True)
-    filename_template = 'Комментарии к {id}.{title}.txt'
-    file_path = os.path.join(
-        folder,
-        sanitize_filename(filename_template.format(
-            id=book_info['id'],
-            title=book_info['title'],
-        ))
-    )
-
-    with open(file_path, 'w') as file_obj:
-        file_obj.write('\n\n'.join(book_info['comments']))
     return file_path
 
 def parse_book_page(soup):
@@ -96,9 +78,8 @@ def download_books(start_index=1, stop_index=11):
         response = requests.get(url='https://tululu.org/txt.php', params=params)
         try:
             check_for_redirect(response)
-            book_text = response.text
             book_info = parse_book_info(book_id)
-            save_book(book_info['id'], book_info['title'], book_text)
+            save_book(book_info['id'], book_info['title'], response.text)
             download_image(book_info['book_img_url'])
             save_comments(book_info)
         except requests.exceptions.HTTPError:
