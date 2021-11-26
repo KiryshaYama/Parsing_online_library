@@ -14,12 +14,9 @@ def check_for_redirect(response):
 
 
 def get_file_path(root_path, folder_name, filename):
-    if root_path:
-        os.makedirs(os.path.join(root_path, folder_name), exist_ok=True)
-        return os.path.join(root_path, folder_name, filename)
-
-    os.makedirs(folder_name, exist_ok=True)
-    return os.path.join(folder_name, filename)
+    path = os.path.join(root_path, folder_name) if root_path else folder_name
+    os.makedirs(path, exist_ok=True)
+    return os.path.join(path, filename)
 
 def parse_filename(url):
     file_path = unquote(urlparse(url).path)
