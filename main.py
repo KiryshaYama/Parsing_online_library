@@ -6,18 +6,15 @@ from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.parse import unquote, urljoin, urlparse
 
-
 def check_for_errors(response):
     response.raise_for_status()
     if response.history:
         raise requests.HTTPError()
 
-
 def get_file_path(root_path, folder_name, filename):
     path = os.path.join(root_path, folder_name) if root_path else folder_name
     os.makedirs(path, exist_ok=True)
     return os.path.join(path, filename)
-
 
 def download_image(book_img_url, root_path=None, folder_name='images'):
     response = requests.get(book_img_url)
@@ -29,7 +26,6 @@ def download_image(book_img_url, root_path=None, folder_name='images'):
     with open(file_path, 'wb') as file_obj:
         file_obj.write(response.content)
     return file_path
-
 
 def parse_book_info(book_id, url_template='https://tululu.org/b{book_id}/'):
     response = requests.get(
@@ -49,8 +45,7 @@ def parse_book_info(book_id, url_template='https://tululu.org/b{book_id}/'):
                  'genres': genres, 'id': book_id, }
     return book_info
 
-
-def download_books(start_index=1, stop_index=11):
+def download_books(start_index, stop_index):
     for book_id in range(start_index, stop_index):
         params = {'id': book_id}
         response = requests.get(url='https://tululu.org/txt.php', params=params)
@@ -65,7 +60,7 @@ def download_books(start_index=1, stop_index=11):
 def save_book(book_id, title, text, root_path=None, folder_name='books'):
     file_path = get_file_path(root_path, folder_name, sanitize_filename(f'{book_id}. {title}.txt'))
 
-    with open(file_path, 'w') as file_obj:
+    with open(file_path, 'w', encoding='utf-8') as file_obj:
         file_obj.write(text)
 
 def parse_arguments():
