@@ -18,20 +18,18 @@ def get_file_path(root_path, folder_name, filename):
     os.makedirs(path, exist_ok=True)
     return os.path.join(path, filename)
 
-def parse_filename(url):
-    file_path = unquote(urlparse(url).path)
-    return os.path.basename(file_path)
 
 def download_image(book_img_url, root_path=None, folder_name='images'):
     response = requests.get(book_img_url)
     response.raise_for_status()
     check_for_redirect(response)
 
-    file_path = get_file_path(root_path, folder_name, parse_filename(book_img_url))
+    file_path = get_file_path(root_path, folder_name, os.path.basename(unquote(urlparse(book_img_url).path)))
 
     with open(file_path, 'wb') as file_obj:
         file_obj.write(response.content)
     return file_path
+
 
 def parse_book_page(soup):
     book_header_layout = soup.find('div', id='content').find('h1')
