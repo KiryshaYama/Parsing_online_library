@@ -5,6 +5,7 @@ import argparse
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 from urllib.parse import unquote, urljoin, urlparse
+from tqdm import tqdm
 
 def check_for_errors(response):
     response.raise_for_status()
@@ -46,7 +47,7 @@ def parse_book_info(book_id, url_template='https://tululu.org/b{book_id}/'):
     return book_info
 
 def download_books(start_index, stop_index):
-    for book_id in range(start_index, stop_index):
+    for book_id in tqdm(range(start_index, stop_index)):
         params = {'id': book_id}
         response = requests.get(url='https://tululu.org/txt.php', params=params)
         try:
