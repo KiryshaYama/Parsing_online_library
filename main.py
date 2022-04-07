@@ -7,7 +7,7 @@ from pathvalidate import sanitize_filename
 from urllib.parse import unquote, urljoin, urlparse
 
 
-def check_for_redirect(response):
+def check_for_errors(response):
     response.raise_for_status()
     if response.history:
         raise requests.HTTPError()
@@ -22,7 +22,7 @@ def get_file_path(root_path, folder_name, filename):
 def download_image(book_img_url, root_path=None, folder_name='images'):
     response = requests.get(book_img_url)
     response.raise_for_status()
-    check_for_redirect(response)
+    check_for_errors(response)
 
     file_path = get_file_path(root_path, folder_name, os.path.basename(unquote(urlparse(book_img_url).path)))
 
@@ -35,7 +35,7 @@ def parse_book_info(book_id, url_template='https://tululu.org/b{book_id}/'):
     response = requests.get(
         url_template.format(book_id=book_id),allow_redirects=False)
     response.raise_for_status()
-    check_for_redirect(response)
+    check_for_errors(response)
     soup = BeautifulSoup(response.text, 'lxml')
     book_header_layout = soup.find('div', id='content').find('h1')
     title, author = book_header_layout.text.split('::')
@@ -55,11 +55,10 @@ def download_books(start_index=1, stop_index=11):
         params = {'id': book_id}
         response = requests.get(url='https://tululu.org/txt.php', params=params)
         try:
-            check_for_redirect(response)
+            check_for_errors(response)
             book_info = parse_book_info(book_id)
             save_book(book_info['id'], book_info['title'], response.text)
             download_image(book_info['book_img_url'])
-            save_comments(book_info)
         except requests.exceptions.HTTPError:
             continue
 
