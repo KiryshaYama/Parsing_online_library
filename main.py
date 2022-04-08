@@ -19,7 +19,6 @@ def get_file_path(root_path, folder_name, filename):
 
 def download_image(book_img_url, root_path=None, folder_name='images'):
     response = requests.get(book_img_url)
-    response.raise_for_status()
     check_for_errors(response)
 
     file_path = get_file_path(root_path, folder_name, os.path.basename(unquote(urlparse(book_img_url).path)))
@@ -31,7 +30,6 @@ def download_image(book_img_url, root_path=None, folder_name='images'):
 def parse_book_info(book_id, url_template='https://tululu.org/b{book_id}/'):
     response = requests.get(
         url_template.format(book_id=book_id),allow_redirects=False)
-    response.raise_for_status()
     check_for_errors(response)
     soup = BeautifulSoup(response.text, 'lxml')
     book_header_layout = soup.find('div', id='content').find('h1')
