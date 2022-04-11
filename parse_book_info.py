@@ -6,7 +6,7 @@ from urllib.parse import urljoin, urlparse
 
 def parse_book_info(url):
     response = requests.get(url)
-    check_for_errors(response)
+    response.raise_for_status()
     soup = BeautifulSoup(response.text, 'lxml')
     book_header_layout = soup.find('div', id='content').find('h1')
     title, author = book_header_layout.text.split('::')
@@ -16,7 +16,9 @@ def parse_book_info(url):
     comments = [comment_layout.find('span').text for comment_layout in comment_soups]
     genres_soups = soup.find_all('span', class_='d_book')
     genres = [genre.find('a').text for genre in genres_soups]
-    book_id = urlparse(url).path[2:-1]
+    book_id = urlparse(url).path[2:]
+    print(book_id)
     book_info = {'title': title.strip(), 'author': author.strip(), 'book_img_url': book_img_url, 'comments': comments,
                  'genres': genres, 'id': book_id, }
+    print(book_info)
     return book_info

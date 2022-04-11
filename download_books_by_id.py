@@ -5,7 +5,6 @@ from check_for_errors import check_for_errors
 
 from download_txt import download_txt
 from download_image import download_image
-from urllib.parse import urljoin
 from tqdm import tqdm
 
 
@@ -21,7 +20,7 @@ def download_books(start_index, stop_index):
         response = requests.get(url='https://tululu.org/txt.php', params=params)
         try:
             check_for_errors(response)
-            book_url=urljoin('https://tululu.org/b', str(book_id))
+            book_url='https://tululu.org/b' + str(book_id)
             book_info = parse_book_info(book_url)
             download_txt(book_info['id'], book_info['title'], response.text)
             download_image(book_info['book_img_url'])
