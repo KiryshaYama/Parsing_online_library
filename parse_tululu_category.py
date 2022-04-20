@@ -23,7 +23,7 @@ def parse_pages(start_page, end_page):
         try:
             for book in books:
                 book_url = urljoin('https://tululu.org',
-                                   book.find('a')['href'][:-1])
+                                   book.select_one('a')['href'][:-1])
                 response = requests.get(book_url)
                 response.raise_for_status()
                 book_info = parse_book_info(book_url)
