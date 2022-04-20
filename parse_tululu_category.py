@@ -38,20 +38,30 @@ def parse_pages(start_page, end_page):
     save_to_json(book_items)
 
 
+def get_last_page():
+    url = 'http://tululu.org/l55'
+    response = requests.get(url)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, 'lxml')
+    last_page = int(soup.select_one('.npage:last-child').text)
+    return last_page
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description='Download books in TXT'
     )
     parser.add_argument(
-        'start_index',
+        '--start_page',
+        default=1,
         type=int,
-        help='start index to download books in book ID\
-        range from start to stop'
+        help='Начальный номер страницы, по умолчанию: 1'
     )
     parser.add_argument(
-        'stop_index',
+        '--end_page',
+        default=get_last_page() + 1,
         type=int,
-        help='stop index to download books in book ID range from start to stop'
+        help='Конечный номер страницы, по умолчанию: 701',
     )
     return parser.parse_args()
 
@@ -59,12 +69,12 @@ def parse_arguments():
 def main():
 
     args = parse_arguments()
-    if args.start_index < 1:
-        args.start_index = 1
-    if args.stop_index < args.start_index:
+    if args.start_page < 1:
+        args.start_page = 1
+    if args.end_page < args.start_page:
         raise ValueError('Input indexes range is wrong: '
-                         f'from {args.start_index} to {args.stop_index}')
-    parse_pages(args.start_index, args.stop_index+1)
+                         f'from {args.start_page} to {args.end_page}')
+    parse_pages(args.start_page, args.end_page)
 
 
 if __name__ == '__main__':
