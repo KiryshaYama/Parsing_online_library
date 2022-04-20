@@ -2,6 +2,9 @@ import requests
 import os
 import argparse
 
+from pathvalidate import sanitize_filename
+from urllib.parse import unquote, urlparse
+from check_for_redirect import check_for_redirect
 from parse_book_info import parse_book_info
 from save_to_json import save_to_json
 from download_txt import download_txt
@@ -14,24 +17,6 @@ def get_file_path(root_path, folder_name, filename):
     os.makedirs(path, exist_ok=True)
     return os.path.join(path, filename)
 
-
-def download_books(start_index, stop_index):
-    book_items = list()
-    for book_id in tqdm(range(start_index, stop_index)):
-        params = {'id': book_id}
-        response = requests.get(url='https://tululu.org/txt.php',
-                                params=params)
-        try:
-            response.raise_for_status()
-            book_url = 'https://tululu.org/b' + str(book_id)
-            book_info = parse_book_info(book_url)
-            download_txt(book_info['id'], book_info['title'], response.text)
-            download_image(book_info['book_img_url'])
-            book_items.append(book_info)
-
-        except requests.exceptions.HTTPError:
-            continue
-    save_to_json(book_items)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
@@ -48,17 +33,69 @@ def parse_arguments():
         type=int,
         help='stop index to download books in book ID range from start to stop'
     )
+    parser.add_argument(
+        '--dest_folder',
+        default='',
+        help='Путь к каталогу "куда скачивать"',
+    )
+    parser.add_argument(
+        '--skip_imgs',
+        action='store_true',
+        default=False,
+        help='Не скачивать картинки',
+    )
+    parser.add_argument(
+        '--skip_txt',
+        action='store_true',
+        default=False,
+        help='Не скачивать книги',
+    )
+    parser.add_argument(
+        '--json_path',
+        help='Путь к .json файлу с результатами',
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
+    txt_filepath = os.path.join(args.dest_folder, 'books')
+    img_filepath = os.path.join(args.dest_folder, 'images')
+    os.makedirs(txt_filepath, exist_ok=True)
+    os.makedirs(img_filepath, exist_ok=True)
+    if args.json_path:
+        json_filepath = args.json_path
+    else:
+        json_filepath = args.dest_folder
     if args.start_index < 1:
         args.start_index = 1
     if args.stop_index < args.start_index:
         raise ValueError('Input indexes range is wrong: '
                          f'from {args.start_index} to {args.stop_index}')
-    download_books(args.start_index, args.stop_index+1)
+    book_items = list()
+    for book_id in tqdm(range(args.start_index, args.stop_index+1)):
+        params = {'id': book_id}
+        response = requests.get(url='https://tululu.org/txt.php',
+                                params=params)
+        try:
+            check_for_redirect(response)
+            book_url = 'https://tululu.org/b' + str(book_id)
+            book_info = parse_book_info(book_url)
+            if not args.skip_txt:
+                download_txt(book_info['id'], book_info['title'], response.text, txt_filepath)
+                book_info.update(book_path=os.path.join(txt_filepath, sanitize_filename(
+                    f'{book_info["id"]}. {book_info["title"]}.txt')))
+            if not args.skip_imgs:
+                download_image(book_info['book_img_url'], img_filepath)
+                book_info.update(
+                    img_src=os.path.join(img_filepath, os.path.basename(
+                        unquote(urlparse(book_info['book_img_url']).path)))
+                )
+            book_items.append(book_info)
+
+        except requests.exceptions.HTTPError:
+            continue
+    save_to_json(book_items, json_filepath)
 
 
 if __name__ == '__main__':
