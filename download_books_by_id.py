@@ -1,9 +1,10 @@
 import requests
 import os
 import argparse
+
 from parse_book_info import parse_book_info
 from check_for_errors import check_for_errors
-
+from save_to_json import save_to_json
 from download_txt import download_txt
 from download_image import download_image
 from tqdm import tqdm
@@ -16,6 +17,7 @@ def get_file_path(root_path, folder_name, filename):
 
 
 def download_books(start_index, stop_index):
+    book_items = list()
     for book_id in tqdm(range(start_index, stop_index)):
         params = {'id': book_id}
         response = requests.get(url='https://tululu.org/txt.php',
@@ -26,9 +28,11 @@ def download_books(start_index, stop_index):
             book_info = parse_book_info(book_url)
             download_txt(book_info['id'], book_info['title'], response.text)
             download_image(book_info['book_img_url'])
+            book_items.append(book_info)
+
         except requests.exceptions.HTTPError:
             continue
-
+    save_to_json(book_items)
 
 def parse_arguments():
     parser = argparse.ArgumentParser(

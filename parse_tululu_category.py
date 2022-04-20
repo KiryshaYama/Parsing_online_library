@@ -1,5 +1,6 @@
 import requests
 import argparse
+from save_to_json import save_to_json
 
 from parse_book_info import parse_book_info
 from check_for_errors import check_for_errors
@@ -11,6 +12,7 @@ from tqdm import tqdm
 
 
 def parse_pages(start_page, end_page):
+    book_items = list()
     for page in tqdm(range(start_page, end_page)):
         url = f'https://tululu.org/l55/{page}/'
         response = requests.get(url)
@@ -31,8 +33,10 @@ def parse_pages(start_page, end_page):
                 download_txt(book_info['id'], book_info['title'],
                              response.text)
                 download_image(book_info['book_img_url'])
+                book_items.append(book_info)
         except requests.exceptions.HTTPError:
             continue
+    save_to_json(book_items)
 
 
 def parse_arguments():
@@ -54,6 +58,7 @@ def parse_arguments():
 
 
 def main():
+
     args = parse_arguments()
     if args.start_index < 1:
         args.start_index = 1

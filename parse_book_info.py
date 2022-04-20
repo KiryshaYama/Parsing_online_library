@@ -1,4 +1,5 @@
 import requests
+import os
 
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
@@ -19,7 +20,12 @@ def parse_book_info(url):
     genres = [genre.find('a').text for genre in genres_soups]
     book_id = urlparse(url).path[2:]
     book_info = {
-        'title': title.strip(), 'author': author.strip(),
-        'book_img_url': book_img_url, 'comments': comments,
-        'genres': genres, 'id': book_id}
+        'title': title.strip(),
+        'author': author.strip(),
+        'book_img_url': book_img_url,
+        'img_src': f'/images/{os.path.split(book_img_layout["src"])[-1]}',
+        'book_path': f'/books/{book_id}.txt',
+        'comments': comments,
+        'genres': genres,
+        'id': book_id}
     return book_info
