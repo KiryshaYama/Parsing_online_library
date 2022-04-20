@@ -1,9 +1,8 @@
 import requests
 import argparse
-from save_to_json import save_to_json
 
+from save_to_json import save_to_json
 from parse_book_info import parse_book_info
-from check_for_errors import check_for_errors
 from download_txt import download_txt
 from download_image import download_image
 from urllib.parse import urljoin
@@ -16,7 +15,7 @@ def parse_pages(start_page, end_page):
     for page in tqdm(range(start_page, end_page)):
         url = f'https://tululu.org/l55/{page}/'
         response = requests.get(url)
-        check_for_errors(response)
+        response.raise_for_status()
         soup = BeautifulSoup(response.text, 'lxml')
         books = soup.find('div', id='content').find_all('div',
                                                         class_='bookimage')

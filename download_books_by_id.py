@@ -3,7 +3,6 @@ import os
 import argparse
 
 from parse_book_info import parse_book_info
-from check_for_errors import check_for_errors
 from save_to_json import save_to_json
 from download_txt import download_txt
 from download_image import download_image
@@ -23,7 +22,7 @@ def download_books(start_index, stop_index):
         response = requests.get(url='https://tululu.org/txt.php',
                                 params=params)
         try:
-            check_for_errors(response)
+            response.raise_for_status()
             book_url = 'https://tululu.org/b' + str(book_id)
             book_info = parse_book_info(book_url)
             download_txt(book_info['id'], book_info['title'], response.text)
