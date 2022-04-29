@@ -13,7 +13,7 @@ python parse_tululu_category.py --start_page 1 --end_page 2
 ```
 Скачает книги с первой страницы  в папку `books` картинки к ним в папку `images` и файл с данными в формате `.json` в папку скрипта
 пример файла `.json`
-```
+```json
 [
         {
         "title": "Алиби",
