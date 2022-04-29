@@ -6,16 +6,9 @@ from pathvalidate import sanitize_filename
 from urllib.parse import unquote, urlparse
 from check_for_redirect import check_for_redirect
 from parse_book_info import parse_book_info
-from save_to_json import save_to_json
 from download_txt import download_txt
 from download_image import download_image
 from tqdm import tqdm
-
-
-def get_file_path(root_path, folder_name, filename):
-    path = os.path.join(root_path, folder_name) if root_path else folder_name
-    os.makedirs(path, exist_ok=True)
-    return os.path.join(path, filename)
 
 
 def parse_arguments():
@@ -95,7 +88,9 @@ def main():
 
         except requests.exceptions.HTTPError:
             continue
-    save_to_json(book_items, json_filepath)
+    json_filepath = os.path.join(json_filepath, 'book_items.json')
+    with open(json_filepath, 'w', encoding='utf-8') as file:
+        json.dump(book_items, file, indent=4, ensure_ascii=False)
 
 
 if __name__ == '__main__':

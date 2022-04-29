@@ -3,7 +3,6 @@ import os
 
 from check_for_redirect import check_for_redirect
 from urllib.parse import unquote, urlparse
-from make_file_path import get_file_path
 
 
 def download_image(book_img_url, img_filepath):

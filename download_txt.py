@@ -1,4 +1,3 @@
-from make_file_path import get_file_path
 from pathvalidate import sanitize_filename
 import os
 
