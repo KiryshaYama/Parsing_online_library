@@ -4,7 +4,6 @@ import os
 import json
 
 from pathvalidate import sanitize_filename
-from check_for_redirect import check_for_redirect
 from parse_book_info import parse_book_info
 from download_txt import download_txt
 from download_image import download_image
@@ -82,9 +81,9 @@ def main():
     for page in tqdm(range(args.start_page, args.end_page)):
         url = f'https://tululu.org/l55/{page}/'
         response = requests.get(url)
-        check_for_redirect(response)
-        if response.history:
-            raise requests.HTTPError
+        response.raise_for_status()
+        #if response.history:
+            #raise requests.HTTPError
         soup = BeautifulSoup(response.text, 'lxml')
         books = soup.find('div', id='content').find_all('div',
                                                         class_='bookimage')
@@ -98,6 +97,7 @@ def main():
                 params = {'id': book_info['id']}
                 response = requests.get(url='https://tululu.org/txt.php',
                                         params=params)
+                response.raise_for_status()
                 if not args.skip_txt:
                     download_txt(book_info['id'], book_info['title'],response.text, txt_filepath)
                     book_info.update(book_path=os.path.join(txt_filepath, sanitize_filename(f'{book_info["id"]}. {book_info["title"]}.txt')))

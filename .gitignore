@@ -117,3 +117,4 @@ dmypy.json
 books/
 images/
 comments/
+*.json

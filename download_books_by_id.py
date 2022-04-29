@@ -4,7 +4,6 @@ import argparse
 
 from pathvalidate import sanitize_filename
 from urllib.parse import unquote, urlparse
-from check_for_redirect import check_for_redirect
 from parse_book_info import parse_book_info
 from download_txt import download_txt
 from download_image import download_image
@@ -70,8 +69,8 @@ def main():
         params = {'id': book_id}
         response = requests.get(url='https://tululu.org/txt.php',
                                 params=params)
+        response.raise_for_status()
         try:
-            check_for_redirect(response)
             book_url = 'https://tululu.org/b' + str(book_id)
             book_info = parse_book_info(book_url)
             if not args.skip_txt:
