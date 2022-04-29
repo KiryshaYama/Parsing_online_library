@@ -23,8 +23,6 @@ def parse_book_info(url):
         'title': title.strip(),
         'author': author.strip(),
         'book_img_url': book_img_url,
-        #'img_src': f'/images/{os.path.split(book_img_layout["src"])[-1]}',
-        #'book_path': f'/books/{book_id}.txt',
         'comments': comments,
         'genres': genres,
         'id': book_id
