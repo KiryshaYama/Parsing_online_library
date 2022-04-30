@@ -17,6 +17,8 @@
 
 `--json_path` Путь к .json файлу с результатами
 
+Дополнительно в скрипт `parse_tululu_category.py` можно изменить категорию скачиваемых книг путем замены переменной categoty_id
+
 #### Пример:
 ```bash
 python parse_tululu_category.py --start_page 1 --end_page 2
