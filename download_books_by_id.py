@@ -59,7 +59,10 @@ def download_image(book_img_url, img_filepath):
 
 
 def download_txt(book_id, title, text, txt_filepath):
-    txt_filepath = os.path.join(txt_filepath, sanitize_filename(f'{book_id}. {title}.txt'))
+    txt_filepath = os.path.join(
+        txt_filepath,
+        sanitize_filename(f'{book_id}. {title}.txt')
+    )
     with open(txt_filepath, 'w', encoding='utf-8') as file_obj:
         file_obj.write(text)
 
@@ -75,8 +78,8 @@ def parse_book_info(url):
     book_img_layout = soup.select_one('.bookimage img')
     book_img_url = urljoin(response.url, book_img_layout['src'])
     comment_soups = soup.select('.texts')
-    comments = [
-        comment_layout.select_one('span').text for comment_layout in comment_soups]
+    comments = [comment_layout.select_one('span').text
+                for comment_layout in comment_soups]
     genres_soups = soup.select('span.d_book')
     genres = [genre.select_one('a').text for genre in genres_soups]
     book_id = urlparse(url).path[2:]
@@ -116,14 +119,32 @@ def main():
             book_url = 'https://tululu.org/b' + str(book_id)
             parsed_book_info = parse_book_info(book_url)
             if not args.skip_txt:
-                download_txt(parsed_book_info['id'], parsed_book_info['title'], response.text, txt_filepath)
-                parsed_book_info.update(book_path=os.path.join(txt_filepath, sanitize_filename(
-                    f'{parsed_book_info["id"]}. {parsed_book_info["title"]}.txt')))
+                download_txt(
+                    parsed_book_info['id'],
+                    parsed_book_info['title'],
+                    response.text,
+                    txt_filepath
+                )
+                parsed_book_info.update(
+                    book_path=os.path.join(
+                        txt_filepath,
+                        sanitize_filename(
+                            f'{parsed_book_info["id"]}. '
+                            f'{parsed_book_info["title"]}.txt')
+                    )
+                )
             if not args.skip_imgs:
                 download_image(parsed_book_info['book_img_url'], img_filepath)
                 parsed_book_info.update(
-                    img_src=os.path.join(img_filepath, os.path.basename(
-                        unquote(urlparse(parsed_book_info['book_img_url']).path)))
+                    img_src=os.path.join(
+                        img_filepath,
+                        os.path.basename(
+                            unquote(
+                                urlparse(
+                                    parsed_book_info['book_img_url']).path
+                            )
+                        )
+                    )
                 )
             books_json.append(parsed_book_info)
 
