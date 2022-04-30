@@ -9,10 +9,10 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 
-def get_last_page():
-    url = 'http://tululu.org/l55'
+def get_last_page(category_id):
+    url = f'https://tululu.org/{category_id}/'
     response = requests.get(url)
-    response.raise_for_status()
+    check_for_errors(response)
     soup = BeautifulSoup(response.text, 'lxml')
     last_page = int(soup.select_one('.npage:last-child').text)
     return last_page
@@ -30,9 +30,9 @@ def parse_arguments():
     )
     parser.add_argument(
         '--end_page',
-        default=get_last_page() + 1,
+        default=get_last_page(category_id) + 1,
         type=int,
-        help='Конечный номер страницы, по умолчанию: 701',
+        help='Номер последней страницы в категории',
     )
     parser.add_argument(
         '--dest_folder',
@@ -58,9 +58,16 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def check_for_errors(response):
+    response.raise_for_status()
+    if response.history:
+        print(response.history)
+        raise requests.HTTPError
+
+
 def download_image(book_img_url, img_filepath):
     response = requests.get(book_img_url)
-    response.raise_for_status()
+    check_for_errors(response)
     img_filepath = os.path.join(img_filepath, os.path.basename(
                                   unquote(urlparse(book_img_url).path)))
     with open(img_filepath, 'wb') as file_obj:
@@ -79,7 +86,7 @@ def download_txt(book_id, title, text, txt_filepath):
 
 def parse_book_info(url):
     response = requests.get(url)
-    response.raise_for_status()
+    check_for_errors(response)
     soup = BeautifulSoup(response.text, 'lxml')
     book_header_layout = soup.select_one('h1')
     title, author = book_header_layout.text.split('::')
@@ -90,7 +97,7 @@ def parse_book_info(url):
                 for comment_layout in comment_soups]
     genres_soups = soup.select('span.d_book')
     genres = [genre.select_one('a').text for genre in genres_soups]
-    book_id = urlparse(url).path[2:]
+    book_id = urlparse(url).path[3:-1]
     book_info = {
         'title': title.strip(),
         'author': author.strip(),
@@ -103,7 +110,6 @@ def parse_book_info(url):
 
 
 def main():
-
     args = parse_arguments()
     txt_filepath = os.path.join(args.dest_folder, 'books')
     img_filepath = os.path.join(args.dest_folder, 'images')
@@ -118,41 +124,41 @@ def main():
     if args.end_page < args.start_page:
         raise ValueError('Input indexes range is wrong: '
                          f'from {args.start_page} to {args.end_page}')
-    books_json = list()
+    books_summary_info = list()
     for page in tqdm(range(args.start_page, args.end_page)):
-        url = f'https://tululu.org/l55/{page}/'
+        url = f'https://tululu.org/{category_id}/{page}/'
         response = requests.get(url)
-        response.raise_for_status()
+        check_for_errors(response)
         soup = BeautifulSoup(response.text, 'lxml')
         books = soup.find('div', id='content').find_all('div',
                                                         class_='bookimage')
         try:
             for book in books:
-                book_url = urljoin('https://tululu.org',
-                                   book.select_one('a')['href'][:-1])
+                book_url = f'https://tululu.org/{book.select_one("a")["href"][:-1]}/'
                 response = requests.get(book_url)
-                response.raise_for_status()
+                check_for_errors(response)
                 parsed_book_info = parse_book_info(book_url)
-                params = {'id': parsed_book_info['id']}
-                response = requests.get(url='https://tululu.org/txt.php',
-                                        params=params)
-                response.raise_for_status()
                 if not args.skip_txt:
-                    download_txt(
-                        parsed_book_info['id'],
-                        parsed_book_info['title'],
-                        response.text,
-                        txt_filepath
-                    )
-                    parsed_book_info.update(
-                        book_path=os.path.join(
-                            txt_filepath,
-                            sanitize_filename(
-                                f'{parsed_book_info["id"]}. '
-                                f'{parsed_book_info["title"]}.txt'
+                    params = {'id': parsed_book_info['id']}
+                    response = requests.get(url='https://tululu.org/txt.php',
+                                            params=params)
+                    print(params['id'])
+                    if not response.history:
+                        download_txt(
+                            parsed_book_info['id'],
+                            parsed_book_info['title'],
+                            response.text,
+                            txt_filepath
+                        )
+                        parsed_book_info.update(
+                            book_path=os.path.join(
+                                txt_filepath,
+                                sanitize_filename(
+                                    f'{parsed_book_info["id"]}. '
+                                    f'{parsed_book_info["title"]}.txt'
+                                )
                             )
                         )
-                    )
                 if not args.skip_imgs:
                     download_image(
                         parsed_book_info['book_img_url'],
@@ -169,13 +175,14 @@ def main():
                             )
                         )
                     )
-                books_json.append(parsed_book_info)
+                books_summary_info.append(parsed_book_info)
         except requests.exceptions.HTTPError:
             continue
     json_filepath = os.path.join(json_filepath, 'books.json')
     with open(json_filepath, 'w', encoding='utf-8') as file:
-        json.dump(books_json, file, indent=4, ensure_ascii=False)
+        json.dump(books_summary_info, file, indent=4, ensure_ascii=False)
 
 
 if __name__ == '__main__':
+    category_id = 'l18'
     main()

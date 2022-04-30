@@ -48,9 +48,15 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def check_for_errors(response):
+    response.raise_for_status()
+    if response.history:
+        raise requests.HTTPError
+
+
 def download_image(book_img_url, img_filepath):
     response = requests.get(book_img_url)
-    response.raise_for_status()
+    check_for_errors(response)
     img_filepath = os.path.join(img_filepath, os.path.basename(
                                   unquote(urlparse(book_img_url).path)))
     with open(img_filepath, 'wb') as file_obj:
@@ -69,9 +75,7 @@ def download_txt(book_id, title, text, txt_filepath):
 
 def parse_book_info(url):
     response = requests.get(url)
-    response.raise_for_status()
-    if len(response.history) > 1:
-        raise requests.HTTPError
+    check_for_errors(response)
     soup = BeautifulSoup(response.text, 'lxml')
     book_header_layout = soup.select_one('h1')
     title, author = book_header_layout.text.split('::')
@@ -109,16 +113,17 @@ def main():
     if args.stop_index < args.start_index:
         raise ValueError('Input indexes range is wrong: '
                          f'from {args.start_index} to {args.stop_index}')
-    books_json = list()
+    books_summary_info = list()
     for book_id in tqdm(range(args.start_index, args.stop_index+1)):
-        params = {'id': book_id}
-        response = requests.get(url='https://tululu.org/txt.php',
-                                params=params)
-        response.raise_for_status()
         try:
-            book_url = 'https://tululu.org/b' + str(book_id)
+            book_url = f'https://tululu.org/b{book_id}/'
             parsed_book_info = parse_book_info(book_url)
-            if not args.skip_txt:
+            params = {
+                'id': f'{book_id}/'
+            }
+            response = requests.get(url='https://tululu.org/txt.php',
+                                    params=params)
+            if not args.skip_txt and not response.history:
                 download_txt(
                     parsed_book_info['id'],
                     parsed_book_info['title'],
@@ -146,13 +151,13 @@ def main():
                         )
                     )
                 )
-            books_json.append(parsed_book_info)
+            books_summary_info.append(parsed_book_info)
 
         except requests.exceptions.HTTPError:
             continue
     json_filepath = os.path.join(json_filepath, 'books.json')
     with open(json_filepath, 'w', encoding='utf-8') as file:
-        json.dump(books_json, file, indent=4, ensure_ascii=False)
+        json.dump(books_summary_info, file, indent=4, ensure_ascii=False)
 
 
 if __name__ == '__main__':
