@@ -1,12 +1,11 @@
 import requests
 import os
 import argparse
+import json
 
+from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
-from urllib.parse import unquote, urlparse
-from parse_book_info import parse_book_info
-from download_txt import download_txt
-from download_image import download_image
+from urllib.parse import unquote, urlparse, urljoin
 from tqdm import tqdm
 
 
@@ -49,6 +48,49 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def download_image(book_img_url, img_filepath):
+    response = requests.get(book_img_url)
+    response.raise_for_status()
+    img_filepath = os.path.join(img_filepath, os.path.basename(
+                                  unquote(urlparse(book_img_url).path)))
+    with open(img_filepath, 'wb') as file_obj:
+        file_obj.write(response.content)
+    return img_filepath
+
+
+def download_txt(book_id, title, text, txt_filepath):
+    txt_filepath = os.path.join(txt_filepath, sanitize_filename(f'{book_id}. {title}.txt'))
+    with open(txt_filepath, 'w', encoding='utf-8') as file_obj:
+        file_obj.write(text)
+
+
+def parse_book_info(url):
+    response = requests.get(url)
+    response.raise_for_status()
+    if len(response.history) > 1:
+        raise requests.HTTPError
+    soup = BeautifulSoup(response.text, 'lxml')
+    book_header_layout = soup.select_one('h1')
+    title, author = book_header_layout.text.split('::')
+    book_img_layout = soup.select_one('.bookimage img')
+    book_img_url = urljoin(response.url, book_img_layout['src'])
+    comment_soups = soup.select('.texts')
+    comments = [
+        comment_layout.select_one('span').text for comment_layout in comment_soups]
+    genres_soups = soup.select('span.d_book')
+    genres = [genre.select_one('a').text for genre in genres_soups]
+    book_id = urlparse(url).path[2:]
+    book_info = {
+        'title': title.strip(),
+        'author': author.strip(),
+        'book_img_url': book_img_url,
+        'comments': comments,
+        'genres': genres,
+        'id': book_id
+    }
+    return book_info
+
+
 def main():
     args = parse_arguments()
     txt_filepath = os.path.join(args.dest_folder, 'books')
@@ -64,7 +106,7 @@ def main():
     if args.stop_index < args.start_index:
         raise ValueError('Input indexes range is wrong: '
                          f'from {args.start_index} to {args.stop_index}')
-    book_items = list()
+    books_json = list()
     for book_id in tqdm(range(args.start_index, args.stop_index+1)):
         params = {'id': book_id}
         response = requests.get(url='https://tululu.org/txt.php',
@@ -72,24 +114,24 @@ def main():
         response.raise_for_status()
         try:
             book_url = 'https://tululu.org/b' + str(book_id)
-            book_info = parse_book_info(book_url)
+            parsed_book_info = parse_book_info(book_url)
             if not args.skip_txt:
-                download_txt(book_info['id'], book_info['title'], response.text, txt_filepath)
-                book_info.update(book_path=os.path.join(txt_filepath, sanitize_filename(
-                    f'{book_info["id"]}. {book_info["title"]}.txt')))
+                download_txt(parsed_book_info['id'], parsed_book_info['title'], response.text, txt_filepath)
+                parsed_book_info.update(book_path=os.path.join(txt_filepath, sanitize_filename(
+                    f'{parsed_book_info["id"]}. {parsed_book_info["title"]}.txt')))
             if not args.skip_imgs:
-                download_image(book_info['book_img_url'], img_filepath)
-                book_info.update(
+                download_image(parsed_book_info['book_img_url'], img_filepath)
+                parsed_book_info.update(
                     img_src=os.path.join(img_filepath, os.path.basename(
-                        unquote(urlparse(book_info['book_img_url']).path)))
+                        unquote(urlparse(parsed_book_info['book_img_url']).path)))
                 )
-            book_items.append(book_info)
+            books_json.append(parsed_book_info)
 
         except requests.exceptions.HTTPError:
             continue
-    json_filepath = os.path.join(json_filepath, 'book_items.json')
+    json_filepath = os.path.join(json_filepath, 'books.json')
     with open(json_filepath, 'w', encoding='utf-8') as file:
-        json.dump(book_items, file, indent=4, ensure_ascii=False)
+        json.dump(books_json, file, indent=4, ensure_ascii=False)
 
 
 if __name__ == '__main__':
