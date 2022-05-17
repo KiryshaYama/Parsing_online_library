@@ -30,7 +30,7 @@ def parse_arguments():
     )
     parser.add_argument(
         '--end_page',
-        default=get_last_page(category_id) + 1,
+        default=get_last_page(CATEGORY_ID) + 1,
         type=int,
         help='Номер последней страницы в категории',
     )
@@ -125,7 +125,7 @@ def main():
                          f'from {args.start_page} to {args.end_page}')
     books_details = list()
     for page in tqdm(range(args.start_page, args.end_page)):
-        url = f'https://tululu.org/{category_id}/{page}/'
+        url = f'https://tululu.org/{CATEGORY_ID}/{page}/'
         response = requests.get(url)
         check_for_errors(response)
         soup = BeautifulSoup(response.text, 'lxml')
@@ -177,5 +177,5 @@ def main():
 
 
 if __name__ == '__main__':
-    category_id = 'l55'
+    CATEGORY_ID = 'l55'
     main()
