@@ -61,7 +61,6 @@ def parse_arguments():
 def check_for_errors(response):
     response.raise_for_status()
     if response.history:
-        print(response.history)
         raise requests.HTTPError
 
 
@@ -142,7 +141,6 @@ def main():
                     params = {'id': parsed_book_info['id']}
                     response = requests.get(url='https://tululu.org/txt.php',
                                             params=params)
-                    print(params['id'])
                     if not response.history:
                         download_txt(
                             parsed_book_info['id'],
