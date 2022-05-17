@@ -123,7 +123,7 @@ def main():
     if args.end_page < args.start_page:
         raise ValueError('Input indexes range is wrong: '
                          f'from {args.start_page} to {args.end_page}')
-    books_summary_info = list()
+    books_details = list()
     for page in tqdm(range(args.start_page, args.end_page)):
         url = f'https://tululu.org/{category_id}/{page}/'
         response = requests.get(url)
@@ -173,12 +173,12 @@ def main():
                             )
                         )
                     )
-                books_summary_info.append(parsed_book_info)
+                books_details.append(parsed_book_info)
         except requests.exceptions.HTTPError:
             continue
     json_filepath = os.path.join(json_filepath, 'books.json')
     with open(json_filepath, 'w', encoding='utf-8') as file:
-        json.dump(books_summary_info, file, indent=4, ensure_ascii=False)
+        json.dump(books_details, file, indent=4, ensure_ascii=False)
 
 
 if __name__ == '__main__':
