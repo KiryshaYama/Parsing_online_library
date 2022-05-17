@@ -150,13 +150,13 @@ def main():
                             txt_filepath
                         )
                         txt_filename = f'{parsed_book_info["id"]}.' \
-                                       f'{parsed_book_info["title"]}.txt'
+                            f'{parsed_book_info["title"]}.txt'
                         clean_txt_filename = sanitize_filename(txt_filename)
                         book_path = os.path.join(
                             txt_filepath,
                             clean_txt_filename
                         )
-                        parsed_book_info.update(book_path=book_path)
+                        parsed_book_info['book_path'] = book_path
                 if not args.skip_imgs:
                     download_image(
                         parsed_book_info['book_img_url'],
@@ -167,7 +167,7 @@ def main():
                     )
                     clear_img_filename = os.path.basename(img_filename)
                     img_src = os.path.join(img_filepath, clear_img_filename)
-                    parsed_book_info.update(img_src=img_src)
+                    parsed_book_info['img_src'] = img_src
                 books_details.append(parsed_book_info)
         except requests.exceptions.HTTPError:
             continue
