@@ -8,6 +8,7 @@ from urllib.parse import urljoin, unquote, urlparse
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
+CATEGORY_ID = 'l55'
 
 def get_last_page(category_id):
     url = f'https://tululu.org/{category_id}/'
@@ -177,5 +178,4 @@ def main():
 
 
 if __name__ == '__main__':
-    CATEGORY_ID = 'l55'
     main()
