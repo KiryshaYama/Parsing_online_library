@@ -141,7 +141,7 @@ def main():
                     params = {'id': parsed_book_info['id']}
                     response = requests.get(url='https://tululu.org/txt.php',
                                             params=params)
-                    if not response.history:
+                    if not check_for_errors(response):
                         download_txt(
                             parsed_book_info['id'],
                             parsed_book_info['title'],
