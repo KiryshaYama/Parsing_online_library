@@ -133,7 +133,8 @@ def main():
                                                         class_='bookimage')
         try:
             for book in books:
-                book_url = f'https://tululu.org/{book.select_one("a")["href"][:-1]}/'
+                book_id = book.select_one("a")["href"][:-1]
+                book_url = f'https://tululu.org/{book_id}/'
                 response = requests.get(book_url)
                 check_for_errors(response)
                 parsed_book_info = parse_book_info(book_url)
@@ -148,31 +149,25 @@ def main():
                             response.text,
                             txt_filepath
                         )
-                        parsed_book_info.update(
-                            book_path=os.path.join(
-                                txt_filepath,
-                                sanitize_filename(
-                                    f'{parsed_book_info["id"]}. '
-                                    f'{parsed_book_info["title"]}.txt'
-                                )
-                            )
+                        txt_filename = f'{parsed_book_info["id"]}.' \
+                                       f'{parsed_book_info["title"]}.txt'
+                        clean_txt_filename = sanitize_filename(txt_filename)
+                        book_path = os.path.join(
+                            txt_filepath,
+                            clean_txt_filename
                         )
+                        parsed_book_info.update(book_path=book_path)
                 if not args.skip_imgs:
                     download_image(
                         parsed_book_info['book_img_url'],
                         img_filepath
                     )
-                    parsed_book_info.update(
-                        img_src=os.path.join(
-                            img_filepath,
-                            os.path.basename(
-                                unquote(
-                                    urlparse(
-                                        parsed_book_info['book_img_url']).path
-                                )
-                            )
-                        )
+                    img_filename = unquote(
+                        urlparse(parsed_book_info['book_img_url']).path
                     )
+                    clear_img_filename = os.path.basename(img_filename)
+                    img_src = os.path.join(img_filepath, clear_img_filename)
+                    parsed_book_info.update(img_src=img_src)
                 books_details.append(parsed_book_info)
         except requests.exceptions.HTTPError:
             continue
